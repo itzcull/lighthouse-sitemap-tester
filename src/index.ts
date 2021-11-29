@@ -1,19 +1,53 @@
+import args from 'args';
 import chromeLauncher from 'chrome-launcher';
 import fs from 'fs';
-import lighthouse from 'lighthouse';
+import getRobotsTxt from './utils/getRobotsTxt';
+import getSitemapFromRobots from './utils/getSitemapFromRobots';
+import testWebPage from './utils/testWebPage';
 
 const URLS = ['https://wisemind.com'];
-const CATEGORIES = ['performance', ''];
 
-const testAllPages = async (categories, urls) => {
-  if (!(category in CATEGORIES)) {
-    return;
+const ALL_CATEGORIES = [
+  'performance',
+  'accessibility',
+  'best-practices',
+  'seo',
+  'pwa',
+];
+
+args.options([
+  {
+    name: 'target',
+    description: 'URL to target for testing.',
+    init: (value: string) => value.toLowerCase(),
+    defaultValue: 'https://google.com',
+  },
+  {
+    name: 'category',
+    description: 'Category to test.',
+    init: (value: string) => value.toLowerCase(),
+    defaultValue: 'performance',
+  },
+]);
+
+const flags = args.parse(process.argv);
+
+console.log(flags);
+
+const robots = await getRobotsTxt(URLS[0]);
+
+const sitemap = await getSitemapFromRobots(robots);
+
+const urls = sitemap;
+const testAllPages = async (categories: string[], urls: string[]) => {
+  if (!(flags['category'] in ALL_CATEGORIES)) {
+    throw new Error('Invalid category');
   }
 
   const chrome = await chromeLauncher.launch({ chromeFlags: ['--headless'] });
 
   for (const url of urls) {
-    const result = await testPage(chrome, url, categories);
+    const result = await testWebPage(chrome, url, categories);
 
     const reportHtml = result.report;
     fs.writeFileSync(`../reports/${result.finalUrl}.html`, reportHtml);
@@ -26,21 +60,6 @@ const testAllPages = async (categories, urls) => {
   }
 
   await chrome.kill();
-};
-
-const testPage = async (
-  chromeInstance: any,
-  url: string,
-  categories: string[]
-) => {
-  const result = await lighthouse(url, {
-    logLevel: 'verbose',
-    output: 'html',
-    onlyCategories: categories,
-    port: chromeInstance.port,
-  });
-
-  return result;
 };
 
 testAllPages(['performance'], URLS);
