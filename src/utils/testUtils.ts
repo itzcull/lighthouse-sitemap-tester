@@ -1,18 +1,16 @@
-const lighthouse = require('lighthouse');
+import lighthouse from 'lighthouse';
 
-const testWebPage = async (
+export const testWebPage = async (
   chromeInstance: any,
   url: string,
-  categories: string[]
+  category: string
 ) => {
   const result = await lighthouse(url, {
     logLevel: 'verbose',
     output: 'html',
-    onlyCategories: categories,
+    onlyCategories: category,
     port: chromeInstance.port,
   });
 
   return result;
 };
-
-export default testWebPage;

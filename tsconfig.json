@@ -1,23 +1,20 @@
 {
   "compilerOptions": {
     "target": "esnext" /* Set the JavaScript language version for emitted JavaScript and include compatible library declarations. */,
-    "lib": [
-      "esnext"
-    ] /* Specify a set of bundled library declaration files that describe the target runtime environment. */,
-    "module": "ESNext" /* Specify what module code is generated. */,
-    "moduleResolution": "node",
-    "typeRoots": [
-      "./src/types"
-    ] /* Specify a set of directories that contain declaration files that are referenced by the source files. */,
-
+    "lib": ["esnext"],
+    "module": "commonjs" /* Specify what module code is generated. */,
+    "moduleResolution": "Node",
+    "esModuleInterop": true,
+    "typeRoots": ["src/types", "node_modules/@types"],
+    "allowSyntheticDefaultImports": true,
     /* Interop Constraints */
     // "isolatedModules": true,                          /* Ensure that each file can be safely transpiled without relying on other imports. */
-    // "allowSyntheticDefaultImports": true,             /* Allow 'import x from y' when a module doesn't have a default export. */
-    "esModuleInterop": true /* Emit additional JavaScript to ease support for importing CommonJS modules. This enables `allowSyntheticDefaultImports` for type compatibility. */,
     "forceConsistentCasingInFileNames": true /* Ensure that casing is correct in imports. */,
     "strict": true /* Enable all strict type-checking options. */,
     "skipLibCheck": true /* Skip type checking all .d.ts files. */,
-    "outDir": "dist"
+    "outDir": "dist",
+    "noEmit": false /* Do not emit outputs. */
   },
-  "include": ["./src/**/*", "./node_modules/lighthouse/types/**/*.d.ts"]
+  "ts-node": { "files": true },
+  "exclude": ["node_modules", "dist"]
 }

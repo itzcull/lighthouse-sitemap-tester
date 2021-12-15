@@ -1,13 +1,15 @@
-import args from 'args';
 import chromeLauncher from 'chrome-launcher';
+import dotenv from 'dotenv';
 import fs from 'fs';
-import getRobotsTxt from './utils/getRobotsTxt';
-import getSitemapFromRobots from './utils/getSitemapFromRobots';
-import testWebPage from './utils/testWebPage';
+import path from 'path';
+import SiteMapper from 'sitemapper';
+import { URL } from 'url';
 
-const URLS = ['https://wisemind.com'];
+dotenv.config({
+  path: `.env`,
+});
 
-const ALL_CATEGORIES = [
+const ALL_CATEGORIES: string[] = [
   'performance',
   'accessibility',
   'best-practices',
@@ -15,51 +17,69 @@ const ALL_CATEGORIES = [
   'pwa',
 ];
 
-args.options([
-  {
-    name: 'target',
-    description: 'URL to target for testing.',
-    init: (value: string) => value.toLowerCase(),
-    defaultValue: 'https://google.com',
-  },
-  {
-    name: 'category',
-    description: 'Category to test.',
-    init: (value: string) => value.toLowerCase(),
-    defaultValue: 'performance',
-  },
-]);
+// const args = arg({
+//   '--help': Boolean,
+//   '--version': Boolean,
+//   '--category': (string) => {
+//     return string.toLowerCase();
+//   },
+//   '--url': String,
+//   '-c': '--category',
+//   '-u': '--url',
+// });
 
-const flags = args.parse(process.argv);
+// const urlRegex = new RegExp(
+//   /[(http(s)?):\/\/(www\.)?a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,6}\b([-a-zA-Z0-9@:%_\+.~#?&//=]*)/
+// );
 
-console.log(flags);
+// // Input validation
+// if (!args['--target'] || !args['--category']) {
+//   throw new Error('You must specify a target and category');
+// } else if (urlRegex.test(args['--target']) === false) {
+//   throw new Error('You must specify a valid URL');
+// } else if (ALL_CATEGORIES.includes(args['--category'] as string) === false) {
+//   throw new Error('You must specify a valid category');
+// }
 
-const robots = await getRobotsTxt(URLS[0]);
+// const target = args['--target'] as string;
+// const category = args['--category'] as Category;
 
-const sitemap = await getSitemapFromRobots(robots);
+const main = async () => {
+  const target = process.env.TARGET;
+  const category = 'performance';
 
-const urls = sitemap;
-const testAllPages = async (categories: string[], urls: string[]) => {
-  if (!(flags['category'] in ALL_CATEGORIES)) {
-    throw new Error('Invalid category');
-  }
+  const sitemapper = new SiteMapper({
+    url: target + '/sitemap.xml',
+    debug: true,
+  });
+
+  const urls = await sitemapper.fetch().then((data) => data.sites);
 
   const chrome = await chromeLauncher.launch({ chromeFlags: ['--headless'] });
 
   for (const url of urls) {
-    const result = await testWebPage(chrome, url, categories);
+    const runnerResult = await testWebPage(chrome, url, category);
 
-    const reportHtml = result.report;
-    fs.writeFileSync(`../reports/${result.finalUrl}.html`, reportHtml);
+    // Using url pathname to uniquely name files
+    const urlPath = new URL(url).pathname;
 
-    console.log('Report is done for', result.lhr.finalUrl);
+    const reportHtml = runnerResult.report;
+    fs.writeFileSync(
+      path.join(
+        __dirname,
+        `./reports/${category}-${urlPath.replace('/', '-')}`
+      ),
+      reportHtml
+    );
+
+    console.log('Report is done for', runnerResult.lhr.finalUrl);
     console.log(
       'Performance score was',
-      result.lhr.categories.performance.score * 100
+      runnerResult.lhr.categories.performance.score * 100
     );
   }
 
   await chrome.kill();
 };
 
-testAllPages(['performance'], URLS);
+main();
